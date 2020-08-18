@@ -5,6 +5,32 @@ import scipy.stats as stats
 
 import dslr_scan_helper.lib as lib
 
+def invert_and_stretch(context, img):
+    if img.ndim == 2:
+        return invert_bw(context, img)
+
+    return invert_color(context, img)
+
+def invert_bw(context, img):
+    img = img.copy()
+
+    histogram, _ = np.histogram(img, bins = 2 ** 16, range = (0, 2**16 - 1))
+
+    context.log_histogram("inverter", "bw histogram", histogram)
+
+    min_value, max_value = find_interval(context, histogram)
+
+    context.log_scalar("inverter", "min", min_value)
+    context.log_scalar("inverter", "max", max_value)
+
+    # re scaling of colors
+    img = lib.rescale(img, max(0, min_value), min(2 ** 16 - 1, max_value), 0, 2**16 - 1)
+
+    # inverting
+    img = invert(context, img[:, :], 2 ** 16 - 1)
+
+    return img.astype(np.uint16)
+
 def invert_color(context, img):
     img = img.copy()
 

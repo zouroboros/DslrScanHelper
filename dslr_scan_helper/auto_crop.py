@@ -5,21 +5,28 @@ from math import sqrt
 import dslr_scan_helper.lib as lib
 
 def crop(context, img, corner_detector):
-    gray = lib.to8bit(cv.cvtColor(img, cv.COLOR_BGR2GRAY))
+    if img.ndim == 2:
+        gray = lib.to8bit(img)
+    else:
+        gray = lib.to8bit(img[:, :, 2])
+
     gray = cv.blur(gray, (7, 7))
     gray = cv.equalizeHist(gray)
     context.log_image("auto_crop", "grayscale", gray.copy())
-    _, binary = cv.threshold(gray, 200.0, 255, cv.THRESH_BINARY)
+    _, binary = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     context.log_image("auto_crop", "binary", binary.copy())
-    corners = corner_detector(binary)
-    _, corrected_img = correct_and_crop_rectangle(img, corners)
+    corners = corner_detector(context, binary)
+    _, corrected_img = correct_and_crop_rectangle(context, img, corners)
     return corrected_img
 
 
-def find_corners_by_contours(binary_img):
-    contours, _ = cv.findContours(cv.bitwise_not(binary_img), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+def find_corners_by_contours(context, binary_img):
+    inverted = cv.bitwise_not(binary_img)
+    context.log_image("find corners by contours", "inverted binary image", inverted.copy())
+    contours, _ = cv.findContours(inverted, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
 
     largestArea = 0
+    points = []
 
     for cnt in contours:
         area = cv.contourArea(cnt)
@@ -49,7 +56,7 @@ def find_corners_by_contours(binary_img):
 
     return [top_left, top_right, bottom_left, bottom_right]
 
-def correct_and_crop_rectangle(img, corners):
+def correct_and_crop_rectangle(context, img, corners):
     [top_left, top_right, bottom_left, bottom_right] = corners
     width = int(min(distance(top_left, top_right), distance(bottom_left, bottom_right)))
     height = int(min(distance(top_left, bottom_left), distance(top_right, bottom_right)))
@@ -63,7 +70,7 @@ def correct_and_crop_rectangle(img, corners):
 
     transformation = cv.getPerspectiveTransform(np.array(corners, np.float32), np.array(new_corners, np.float32))
 
-    img_height, img_width, _ = img.shape
+    [img_height, img_width] = img.shape[0:2]
 
     return new_corners, cv.warpPerspective(img, transformation, (width, height))
 

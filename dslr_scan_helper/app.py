@@ -12,18 +12,18 @@ class DslrScanHelperApp:
     def __init__(self, context):
         self.context = context
 
-    def convert(self, paths):
-        paths = [Path(path) for path in paths]
-        return itertools.chain([self.convert_file(path) for path in paths if path.is_file()],
-            itertools.chain.from_iterable(self.convert_dir(path) for path in paths if path.is_dir()))
-
-    def convert_file(self, path):
+    def convert_file(self, path, bw=False):
         output_path = path.with_suffix(".tiff")
-        subprocess.run(["convert", "-depth", "16", path, output_path])
-        return output_path
+        arguments = ["convert", "-depth", "16", path]
 
-    def convert_dir(self, path):
-        return [self.convert_file(file) for file in path.iterdir() if file.is_file()]
+        if bw:
+            arguments = arguments + ["-colorspace", "Gray"]
+
+        arguments = arguments + [output_path]
+
+        subprocess.run(arguments)
+
+        return output_path
 
     def crop_file(self, file):
         img = cv.imread(f"{file}", cv.IMREAD_UNCHANGED)
@@ -33,10 +33,10 @@ class DslrScanHelperApp:
         cv.imwrite(new_file, cropped_img)
         return Path(new_file)
 
-    def invert(self, file):
+    def invert_file(self, file):
         img = cv.imread(f"{file}", cv.IMREAD_UNCHANGED)
         self.context.log_image("invert", "original", img)
-        inverted_img = inverter.invert_color(self.context, img)
+        inverted_img = inverter.invert_and_stretch(self.context, img)
         new_file = f"{file.parent / file.stem}-inverted.tiff"
         cv.imwrite(new_file, inverted_img)
         return Path(new_file)
