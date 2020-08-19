@@ -14,7 +14,7 @@ def invert_and_stretch(context, img):
 def invert_bw(context, img):
     img = img.copy()
 
-    histogram, _ = np.histogram(img, bins = 2 ** 16, range = (0, 2**16 - 1))
+    histogram, _ = np.histogram(img, 2 ** 16, range = (0, 2**16 - 1))
 
     context.log_histogram("inverter", "bw histogram", histogram)
 
@@ -26,8 +26,10 @@ def invert_bw(context, img):
     # re scaling of colors
     img = lib.rescale(img, max(0, min_value), min(2 ** 16 - 1, max_value), 0, 2**16 - 1)
 
+    context.log_image("inverter", "streched image", img.copy())
+
     # inverting
-    img = invert(context, img[:, :], 2 ** 16 - 1)
+    img = invert(context, img, 2 ** 16 - 1)
 
     return img.astype(np.uint16)
 
@@ -67,7 +69,7 @@ def invert_color(context, img):
     return img.astype(np.uint16)
 
 def find_interval(context, histogram):
-    dist = stats.rv_histogram((histogram, np.linspace(0, 2**16, 2**16 + 1)))
+    dist = stats.rv_histogram((histogram, np.linspace(0, len(histogram), len(histogram) + 1)))
     return dist.interval(0.99)
 
 def invert(context, img, max):

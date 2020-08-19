@@ -21,7 +21,7 @@ class DebugContext(DslrScanHelperContext):
 
     def log_histogram(self, context_name, name, histogram):
         plt.figure(f"{context_name}: {name}")
-        plt.bar(x = np.linspace(0, 2**16 - 1, num=2**16), height=histogram)
+        plt.bar(x = np.linspace(0, len(histogram) - 1, num=len(histogram)), height=histogram)
 
     def end(self):
         plt.show()

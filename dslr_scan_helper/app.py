@@ -2,6 +2,7 @@ from pathlib import Path
 import subprocess
 import itertools
 
+import numpy as np
 import cv2 as cv
 
 import dslr_scan_helper.auto_crop as auto_crop
@@ -27,15 +28,15 @@ class DslrScanHelperApp:
 
     def crop_file(self, file):
         img = cv.imread(f"{file}", cv.IMREAD_UNCHANGED)
-        self.context.log_image("crop_file", "original", img)
+        self.context.log_image("crop_file", "original", img.copy())
         cropped_img = auto_crop.crop(self.context, img, auto_crop.find_corners_by_contours)
         new_file = f"{file.parent / file.stem}-cropped.tiff"
         cv.imwrite(new_file, cropped_img)
         return Path(new_file)
 
     def invert_file(self, file):
-        img = cv.imread(f"{file}", cv.IMREAD_UNCHANGED)
-        self.context.log_image("invert", "original", img)
+        img = cv.imread(f"{file}", cv.IMREAD_UNCHANGED).astype(np.uint16)
+        self.context.log_image("invert", "original", img.copy())
         inverted_img = inverter.invert_and_stretch(self.context, img)
         new_file = f"{file.parent / file.stem}-inverted.tiff"
         cv.imwrite(new_file, inverted_img)

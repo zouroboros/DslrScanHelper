@@ -26,7 +26,7 @@ def files(path):
         return [file for file in Path('.').glob(str(path)) if file.is_file()]
 
     if path.is_dir():
-        return [file for file in path.iter_dir() if file.is_file()]
+        return [file for file in path.iterdir() if file.is_file()]
 
     return [path]
 
@@ -51,3 +51,5 @@ if __name__ == '__main__':
     if args.command == 'invert':
         for file in files(Path(args.path)):
             app.invert_file(file)
+
+    context.end()
